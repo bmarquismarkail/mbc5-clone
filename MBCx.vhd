@@ -23,15 +23,15 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 
 entity MBCx is
-	port(	not_reset	:	in		std_logic;
-			not_cs		:	in		std_logic;
-			not_wr		:	in		std_logic;
-			data			: 	in		std_logic_vector(7 downto 0);
-			addr			: 	in		std_logic_vector(15 downto 12);
-			rom_addr		: 	out	std_logic_vector(22 downto 14);
-			ram_addr		: 	out	std_logic_vector(16 downto 13);
+	port(	not_reset		:	in	std_logic;
+			not_cs		:	in	std_logic;
+			not_wr		:	in	std_logic;
+			data		: 	in	std_logic_vector(7 downto 0);
+			addr		: 	in	std_logic_vector(15 downto 12);
+			rom_addr	: 	out	std_logic_vector(22 downto 14);
+			ram_addr	: 	out	std_logic_vector(16 downto 13);
 			not_ram_cs	:	out	std_logic;
-			led_ctrl		:	out	std_logic );			
+			led_ctrl	:	out	std_logic );			
 end MBCx;
 
 architecture Behavioral of MBCx is
@@ -41,15 +41,15 @@ architecture Behavioral of MBCx is
 	signal roml_regsel:		std_logic;
 	signal ram_regsel:		std_logic;
 
-	signal romlq:				std_logic_vector(7 downto 0) := "00000001";	-- 32K flat space after reset
-	signal romhq:				std_logic := '0';
+	signal romlq:			std_logic_vector(7 downto 0) := "00000001";	-- 32K flat space after reset
+	signal romhq:			std_logic := '0';
 	
 	signal ram_e_q:			std_logic := '1';
 	
 begin			
 
-		selection:process(addr, data, not_wr)
-		begin
+	selection:process(addr, data, not_wr)
+	begin
 			-- RAM enable	(0000h - 1FFFh)
 			ram_e_regsel <= addr(13) or addr(14) or addr(15) or not_wr;
 						
@@ -66,34 +66,32 @@ begin
 			ram_e_code <= data(3) and (not data(2)) and data(1) and (not data(0));
 		end process selection;	
 		
-		-- REGISTERS
-		-- ---------
-		
-		-- RAM enable register
-		ram_enable:process(not_reset, not_cs, ram_e_code, ram_e_regsel, data)
-		begin
-			if not_reset = '0' then
-				ram_e_q <= '1';
-			elsif rising_edge(ram_e_regsel) then
-				ram_e_q <= ram_e_code;
-			end if;
-		end process ram_enable;
+-- REGISTERS
+-- ---------
+
+-- RAM enable register
+ram_enable:process(not_reset, not_cs, ram_e_code, ram_e_regsel, data)
+begin
+	if not_reset = '0' then
+		ram_e_q <= '1';
+	elsif rising_edge(ram_e_regsel) then
+		ram_e_q <= ram_e_code;
+	end if;
+end process ram_enable;
+
+-- RAM register
+ramreg:process(not_reset, data, ram_regsel) is
+begin
+	if not_reset = '0' then
+		ram_addr <= "0000";
+	elsif rising_edge(ram_regsel)  then
+		ram_addr <= data(3 downto 0);
+	end if;
+end process ramreg;
 
 
 
-		-- RAM register
-		ramreg:process(not_reset, data, ram_regsel) is
-		begin
-			if not_reset = '0' then
-				ram_addr <= "0000";
-			elsif rising_edge(ram_regsel)  then
-				ram_addr <= data(3 downto 0);
-			end if;
-		end process ramreg;
-
-
-
-		-- ROM High  and LED register
+-- ROM High  and LED register
 		-- --------------------------
 		
 		-- ROM 22 and LED register
